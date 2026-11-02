@@ -1,0 +1,13 @@
+# Netlify builds the app from this repository on every push.
+[build]
+  command = "npm run verify && npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# The service worker must always be checked for updates.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
