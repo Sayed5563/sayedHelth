@@ -120,7 +120,11 @@ export function useAccount({ onRemoteDays, onSwitchUser }) {
   };
 
   const signUp = (name, email, password) => run(async (sb) => {
-    const { data, error } = await sb.auth.signUp({ email, password, options: { data: { display_name: name } } });
+    const { data, error } = await sb.auth.signUp({
+      email, password,
+      // Confirmation link returns to whichever address the app is running on.
+      options: { data: { display_name: name }, emailRedirectTo: `${location.origin}${location.pathname}#together` },
+    });
     if (error) throw error;
     if (!data.session) return 'confirm_email';
     await afterSignIn(data.session.user);

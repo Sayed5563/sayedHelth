@@ -1,7 +1,7 @@
 # sayedHelth
 
 An installable, offline-capable meal planner built from the *Hooreya 1600 kcal* PDF.
-Live at <https://sayedhelth.netlify.app/>.
+Live at <https://sayed5563.github.io/sayedHelth/> (built and published by GitHub Actions on every push to `main`).
 React 18 + Vite 5, with a service worker and manifest from `vite-plugin-pwa`. Arabic-first (RTL) with an English interface switch.
 
 ## What's inside
@@ -42,24 +42,17 @@ npm run preview    # serve the production build (the service worker only runs in
 npm run verify     # content check against the PDF
 ```
 
-## Publish and update on Netlify
+## Publish and update (GitHub Pages)
 
-First time:
-1. `npm run build`
-2. Drag the `dist` folder onto <https://app.netlify.com/drop>.
+The workflow in `.github/workflows/deploy.yml` checks the content against the PDF, builds the app and publishes it to GitHub Pages every time something is pushed to `main`. Updates go live in about a minute, and installed phones pick up the new version the next time the app is opened online.
 
-**Updating the live site (sayedhelth.netlify.app):**
-1. Make the change in the source and run `npm run build`.
-2. Log in to Netlify → open the **sayedhelth** site → **Deploys**.
-3. Drag the new `dist` folder onto the drop area at the bottom of the Deploys page.
+One-time setup: repository **Settings → Pages → Build and deployment → Source: GitHub Actions**.
 
-Do not drop it on netlify.com/drop again: that creates a *new* site with a new address. Updating through the site's own Deploys page keeps the same address, and installed phones pick up the new version the next time the app is opened online. Saved progress on the phone is kept.
-
-Optional: put the project on GitHub and link the repository to the Netlify site. Then every change pushed to GitHub is built and published automatically.
+To publish anywhere else instead, run `npm run build` and upload the `dist` folder (it uses relative paths, so any host or sub-folder works). `netlify.toml` is kept for Netlify.
 
 ## Install on an Android phone
 
-1. Open <https://sayedhelth.netlify.app/> in **Chrome on Android** and let the page load fully once.
+1. Open <https://sayed5563.github.io/sayedHelth/> in **Chrome on Android** and let the page load fully once.
 2. Tap **Install** in the app's top bar (or Chrome's ⋮ menu → **Install app** / **Add to Home screen**).
 3. Open it from the home screen. It runs full-screen and keeps working with no connection.
 
@@ -73,7 +66,7 @@ Signing in also keeps a cloud copy of your own days, so your progress follows yo
 
 1. Create a free account at <https://supabase.com> and a **New project** (any name, e.g. `sayedhelth`; region: London).
 2. Open **SQL Editor → New query**, paste all of `supabase/schema.sql`, press **Run**. This creates the tables and the privacy rules: people only ever see their own data and the data of people they are connected to.
-3. **Authentication → URL Configuration**: set *Site URL* to `https://sayedhelth.netlify.app`, so confirmation emails link back to the app.
+3. **Authentication → URL Configuration**: set *Site URL* to `https://sayed5563.github.io/sayedHelth/` and add the same address under *Redirect URLs*, so confirmation emails link back to the app.
    (Optional: **Authentication → Providers → Email** → turn off *Confirm email* if you don't want a confirmation step.)
 4. **Project Settings → API**: copy the *Project URL* and the *anon public* key, and put them in `src/sync/client.js`
    (or, once the site builds from GitHub, as `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` under Netlify → Site configuration → Environment variables).
