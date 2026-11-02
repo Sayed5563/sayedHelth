@@ -9,12 +9,15 @@ import Home from './pages/Home.jsx';
 import Plan from './pages/Plan.jsx';
 import Progress from './pages/Progress.jsx';
 import Instructions from './pages/Instructions.jsx';
+import Together from './pages/Together.jsx';
+import { useAccount } from './sync/useAccount.js';
 
 const TABS = [
   { id: 'home', icon: 'home' },
   { id: 'plan', icon: 'plan' },
   { id: 'progress', icon: 'progress' },
   { id: 'instructions', icon: 'leaf' },
+  { id: 'together', icon: 'users' },
 ];
 
 const readHash = () => {
@@ -38,12 +41,39 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(null);
+  const pushed = useRef({});
+  const account = useAccount({
+    // Days downloaded from the cloud are already there, so they are not uploaded again.
+    onRemoteDays: (remote) => {
+      store.mergeRemote(remote);
+      Object.entries(remote).forEach(([k, r]) => { pushed.current[k] = r.t; });
+    },
+    onSwitchUser: store.clearDays,
+  });
 
   const notify = useCallback((msg) => {
     clearTimeout(toastTimer.current);
     setToast({ msg, id: Date.now() });
     toastTimer.current = setTimeout(() => setToast(null), 2200);
   }, []);
+
+  // Cloud copy of this phone's days: upload what changed, shortly after it changes, and retry when back online.
+  const shareFlag = account.profile?.share_choices;
+  useEffect(() => { pushed.current = {}; }, [account.user?.id, shareFlag]);
+  useEffect(() => {
+    if (account.status !== 'signedIn' || !account.profile) return undefined;
+    const sync = async () => {
+      const oldest = new Date(); oldest.setDate(oldest.getDate() - 60);
+      const minKey = oldest.toISOString().slice(0, 10);
+      const changed = Object.entries(store.days).filter(([k, rec]) =>
+        k >= minKey && rec && rec.t && pushed.current[k] !== rec.t);
+      if (!changed.length) return;
+      if (await account.pushDays(changed)) changed.forEach(([k, rec]) => { pushed.current[k] = rec.t; });
+    };
+    const id = setTimeout(sync, 1200);
+    window.addEventListener('online', sync);
+    return () => { clearTimeout(id); window.removeEventListener('online', sync); };
+  }, [store.days, account.status, account.profile, account.pushDays]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     document.documentElement.lang = lang;
@@ -136,11 +166,12 @@ export default function App() {
       </header>
 
       <main key={tab} className="view">
-        <DateStrip t={t} lang={lang} store={store} />
+        {tab !== 'together' && <DateStrip t={t} lang={lang} store={store} />}
         {tab === 'home' && <Home {...props} />}
         {tab === 'plan' && <Plan {...props} focus={focus} />}
         {tab === 'progress' && <Progress {...props} />}
         {tab === 'instructions' && <Instructions {...props} />}
+        {tab === 'together' && <Together t={t} lang={lang} account={account} notify={notify} />}
       </main>
 
       <nav className="tabbar" aria-label="Main">

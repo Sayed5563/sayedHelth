@@ -64,7 +64,9 @@ export function usePlanStore() {
   const updateDay = useCallback((fn) => {
     setState((s) => {
       const cur = { ...empty(), ...(s.days[viewKey] || {}) };
-      return { ...s, days: { ...s.days, [viewKey]: fn(cur) } };
+      const next = fn(cur);
+      if (next === cur) return s;
+      return { ...s, days: { ...s.days, [viewKey]: { ...next, t: Date.now() } } };
     });
   }, [viewKey]);
 
@@ -98,11 +100,31 @@ export function usePlanStore() {
 
   const set = (patch) => setState((s) => ({ ...s, ...patch }));
 
+  // Merge days downloaded from the cloud: the newer copy of each day wins.
+  // A cloud copy without meal choices (sharing off) keeps the choices stored on this phone.
+  const mergeRemote = useCallback((remote) => {
+    setState((s) => {
+      let changed = false;
+      const days = { ...s.days };
+      Object.entries(remote).forEach(([k, r]) => {
+        const local = days[k];
+        if (!local || (local.t || 0) < r.t) {
+          days[k] = { sel: r.sel ?? local?.sel ?? {}, done: r.done, ins: r.ins, t: r.t };
+          changed = true;
+        }
+      });
+      return changed ? { ...s, days } : s;
+    });
+  }, []);
+
+  // Used when a different account signs in on this phone: its days come from the cloud instead.
+  const clearDays = useCallback(() => setState((s) => ({ ...s, days: {} })), []);
+
   return {
     lang: state.lang, theme: state.theme, mode: state.mode,
     setLang: (lang) => set({ lang }), setTheme: (theme) => set({ theme }), setMode: (mode) => set({ mode }),
     todayKey: today, viewKey, isToday: viewKey === today, shiftDay, goToday: () => setViewKey(today),
     day, days: state.days, saveFailed,
-    choose, toggleDone, toggleInstruction, resetDay,
+    choose, toggleDone, toggleInstruction, resetDay, mergeRemote, clearDays,
   };
 }

@@ -63,6 +63,24 @@ Optional: put the project on GitHub and link the repository to the Netlify site.
 2. Tap **Install** in the app's top bar (or Chrome's ⋮ menu → **Install app** / **Add to Home screen**).
 3. Open it from the home screen. It runs full-screen and keeps working with no connection.
 
+## Together (sharing progress)
+
+The **Together** tab lets people follow each other's progress. Each person makes an account (name, email, password) and gets a 6-character invite code. When one person enters the other's code, they are connected both ways and each sees the other's meals done today, instructions followed, last 7 days and streak. Meal choices are shared only if that person turns on *Share my meal choices*. Anyone can be removed at any time, and a new invite code can be made if an old one was passed around.
+
+Signing in also keeps a cloud copy of your own days, so your progress follows you to a new phone. Everything still works offline and syncs when the connection is back.
+
+### One-time setup (free Supabase project)
+
+1. Create a free account at <https://supabase.com> and a **New project** (any name, e.g. `sayedhelth`; region: London).
+2. Open **SQL Editor → New query**, paste all of `supabase/schema.sql`, press **Run**. This creates the tables and the privacy rules: people only ever see their own data and the data of people they are connected to.
+3. **Authentication → URL Configuration**: set *Site URL* to `https://sayedhelth.netlify.app`, so confirmation emails link back to the app.
+   (Optional: **Authentication → Providers → Email** → turn off *Confirm email* if you don't want a confirmation step.)
+4. **Project Settings → API**: copy the *Project URL* and the *anon public* key, and put them in `src/sync/client.js`
+   (or, once the site builds from GitHub, as `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` under Netlify → Site configuration → Environment variables).
+5. Rebuild and publish. Until this is done, the Together tab just says sharing isn't set up yet; the rest of the app is unaffected.
+
+The anon key is meant to be public. Access is controlled by the row-level security rules in `schema.sql`, which were tested for: owner access, connected people (read only), strangers (no access), signed-out visitors (no access), and attempts to write someone else's data (refused).
+
 ## Adding food photos
 
 The meal headers use drawn cover art. To use your own photos, put images in `src/photos/` named after the meal:
@@ -82,11 +100,14 @@ src/
   themes.js               colour themes, light + dark for each
   store.js                persisted state (per-day selections, completed meals, instructions)
   App.jsx                 top bar, tab navigation (#home, #plan, #progress, #instructions), install prompt
-  pages/                  Home, Plan, Progress, Instructions
+  pages/                  Home, Plan, Progress, Instructions, Together
+  sync/                   Supabase client and account/sync hook
   components/             MealSection, Ingredients, ProgressRing, MealCover, DateStrip, SettingsSheet, Icon
   styles.css              design tokens (light + dark), layout, components
   photos/                 optional meal photos
 public/                   icons, plate image from the PDF
 scripts/verify-content.mjs  content check
+supabase/schema.sql       database tables and privacy rules for Together
+netlify.toml              Netlify build settings (used when the site builds from GitHub)
 source/Hooreya_1600kcal.pdf original plan
 ```
