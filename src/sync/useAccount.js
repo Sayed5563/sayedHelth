@@ -38,6 +38,7 @@ const friendlyError = (e) => {
   if (/already registered|already been registered/i.test(m)) return 'exists';
   if (/Email not confirmed/i.test(m)) return 'not_confirmed';
   if (/Password should be/i.test(m)) return 'weak_password';
+  if (/ensure_profile|schema cache|does not exist/i.test(m)) return 'db_missing';
   if (/fetch|network|Failed to/i.test(m)) return 'offline';
   return 'generic';
 };
@@ -86,7 +87,11 @@ export function useAccount({ onRemoteDays, onSwitchUser }) {
     setUser(u);
     setStatus('signedIn');
     const { data: prof, error } = await sb.rpc('ensure_profile', { name: u.user_metadata?.display_name || null });
-    if (error) throw error;
+    if (error) {
+      // The sign-in worked but the tables/functions from supabase/schema.sql aren't there yet.
+      if (/ensure_profile|schema cache|does not exist|PGRST202|42883/i.test(`${error.message} ${error.code}`)) setStatus('dbMissing');
+      throw error;
+    }
     setProfile(prof);
     const { data: own } = await sb.from('daily_progress').select('*').eq('user_id', u.id).gte('day', daysAgoKey(60));
     if (own?.length) remoteCb.current(Object.fromEntries(own.map((r) => [r.day, fromRow(r)])));
@@ -101,7 +106,7 @@ export function useAccount({ onRemoteDays, onSwitchUser }) {
     getClient().then(async (sb) => {
       const { data } = await sb.auth.getSession();
       if (cancelled) return;
-      if (data.session?.user) afterSignIn(data.session.user).catch(() => setStatus('signedIn'));
+      if (data.session?.user) afterSignIn(data.session.user).catch(() => {});
       else setStatus('signedOut');
       sub = sb.auth.onAuthStateChange((event, session) => {
         if (event === 'SIGNED_OUT') { setUser(null); setProfile(null); setFriends([]); setStatus('signedOut'); }

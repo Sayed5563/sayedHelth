@@ -184,6 +184,20 @@ export default function Together({ t, lang, account, notify }) {
     return <div className="page">{head}<div className="card skeleton" aria-busy="true" /></div>;
   }
 
+  if (account.status === 'dbMissing') {
+    return (
+      <div className="page">
+        {head}
+        <section className="card notice">
+          <span className="notice-icon"><Icon name="info" size={22} /></span>
+          <h2 className="card-title">{T.dbMissingTitle}</h2>
+          <p className="muted">{T.dbMissingText}</p>
+          <button type="button" className="btn btn-ghost" onClick={() => account.signOut()}>{T.signOut}</button>
+        </section>
+      </div>
+    );
+  }
+
   if (account.status !== 'signedIn') {
     return <div className="page">{head}<AuthForm T={T} account={account} notify={notify} /></div>;
   }
